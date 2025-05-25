@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Увійти / Реєстрація</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles-auth.css') }}">
+</head>
+<body>
+  <div id="main">
+    <main class="content auth-form-container">
+      <form class="auth-form" action="/api/login" method="POST">
+        <div class="logo-container">
+          <img src="{{ url_for('static', filename='rehcfx.png') }}" alt="Logo" class="auth-logo" onclick="location.href='{{ url_for('main_page') }}'">
+        </div>
+        <h2>Увійти</h2>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Пароль</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn-primary">Увійти</button>
+        <p class="auth-link">Немає аккаунту? <a href="{{ url_for('register_page') }}">Зареєструватися</a></p>
+        <p class="auth-link"><a href="{{ url_for('forgot_page') }}">Забули пароль?</a></p>
+      </form>
+    </main>
+  </div>
+  <script>
+    document.querySelector('.auth-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+
+      fetch(form.action, {
+        method: form.method,
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+          window.location.href = "{{ url_for('index') }}";
+        } else {
+          alert("Помилка: " + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Помилка:', error);
+        alert('Виникла помилка під час входу.');
+      });
+    });
+  </script>
+</body>
+</html>

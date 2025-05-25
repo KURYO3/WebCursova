@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мій акаунт (Клієнт)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .account-section {
+            background-color: #fff;
+            padding: 25px;
+            margin-top: 50px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 900px;
+        }
+        .account-section h2 {
+            color: var(--color-dark);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+        .profile-info p {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #555;
+        }
+        .profile-info strong {
+            color: var(--color-dark);
+        }
+        .btn-edit, .btn-save, .btn-cancel, .btn-add-address {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        .btn-edit:hover, .btn-save:hover, .btn-add-address:hover {
+            background-color: var(--color-dark);
+        }
+        .btn-cancel {
+            background-color: #6c757d;
+        }
+        .btn-cancel:hover {
+            background-color: #5a6268;
+        }
+        .profile-edit-form .form-group,
+        .address-form .form-group,
+        .review-form .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .profile-edit-form label,
+        .address-form label,
+        .review-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #444;
+        }
+        .profile-edit-form input[type="text"],
+        .profile-edit-form input[type="email"],
+        .add-address-form input[type="text"],
+        .add-address-form input[type="tel"],
+        .add-address-form textarea,
+        .review-form select,
+        .review-form textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .profile-edit-form input:focus,
+        .add-address-form input:focus,
+        .add-address-form textarea:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(232, 49, 0, 0.2);
+        }
+        .profile-edit-form.hidden {
+            display: none;
+        }
+        .address-list, .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .address-list th, .orders-table th {
+            background-color: var(--color-light);
+            color: var(--color-dark);
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 2px solid var(--color-primary);
+        }
+        .address-list td, .orders-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+        }
+        .address-list tr:nth-child(even), .orders-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .address-list tr:hover, .orders-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        .btn-edit-address,
+        .btn-delete-address {
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        .btn-edit-address {
+            background-color: var(--color-primary);
+        }
+
+        .btn-edit-address:hover {
+            background-color: var(--color-dark);
+        }
+
+        .btn-delete-address {
+            background-color: #6c757d;
+        }
+
+        .btn-delete-address:hover {
+            background-color: #5a6268;
+        }
+        .order-items-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .order-items-list li {
+            margin-bottom: 3px;
+        }
+        .no-data-message {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+            font-style: italic;
+        }
+        .reviews-section h3 {
+            margin-bottom: 10px;
+        }
+        .rating-stars {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            direction: rtl;
+            justify-content: flex-end;
+        }
+        .rating-stars input[type="radio"] {
+            display: none;
+        }
+        .rating-stars label {
+            font-size: 1.8em;
+            color: #ccc;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            width: auto;
+            padding: 0;
+            border: none;
+            margin-bottom: 0;
+        }
+        .rating-stars label:hover,
+        .rating-stars label:hover ~ label,
+        .rating-stars input[type="radio"]:checked ~ label {
+            color: #ffc107;
+        }
+        .rating-stars label:before {
+            content: "\2606";
+        }
+        .rating-stars input[type="radio"]:checked + label:before {
+            content: "\2605";
+        }
+        .review-rating-stars {
+            color: #ffc107;
+            font-size: 1.2em;
+        }
+        .review-form select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+        .review-form-modal textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            height: 60px;
+            margin-bottom: 10px;
+        }
+        .review-form-modal textarea:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(232, 49, 0, 0.2);
+        }
+
+    </style>
+</head>
+<body>
+    <button class="menu-btn toggle-btn fixed-menu-btn">☰</button>
+    <nav class="sidebar" id="sidebar">
+        <ul class="menu-list">
+            <li><a href="{{ url_for('index') }}">Головна</a></li>
+            <li><a href="{{ url_for('restaurants_page') }}">Меню ресторанів</a></li>
+            <li><a href="#" id="cartBtn">Кошик</a></li>
+            <li><a href="#" id="logoutBtn">Вийти</a></li>
+        </ul>
+    </nav>
+    <div class="topbar" id="topbar">
+        <img src="{{ url_for('static', filename='logo2.png') }}" alt="Logo" class="logo" onclick="location.href='{{ url_for('index') }}'">
+    </div>
+    <div id="main">
+        <main class="content">
+            <h1>Мій акаунт</h1>
+
+            <section class="account-section profile-section">
+                <h2>Мій профіль</h2>
+                <div id="profileDisplay">
+                    <p><strong>Ім'я:</strong> <span id="profileName">Завантаження...</span></p>
+                    <p><strong>Email:</strong> <span id="profileEmail">Завантаження...</span></p>
+                    <button class="btn-edit" id="editProfileBtn">Редагувати</button>
+                </div>
+                <form id="profileEditForm" class="profile-edit-form hidden">
+                    <div class="form-group">
+                        <label for="editName">Ім'я:</label>
+                        <input type="text" id="editName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email:</label>
+                        <input type="email" id="editEmail" name="email" required>
+                    </div>
+                    <button type="submit" class="btn-save">Зберегти зміни</button>
+                    <button type="button" class="btn-cancel" id="cancelEditProfileBtn">Скасувати</button>
+                </form>
+            </section>
+
+            <section class="account-section addresses-section">
+                <h2>Мої адреси</h2>
+                <div id="addressesList">
+                    <p class="no-data-message" id="noAddressesMessage">Завантаження адрес...</p>
+                </div>
+                <h3>Додати нову адресу</h3>
+                <form id="addAddressForm" class="add-address-form">
+                    <div class="form-group">
+                        <label for="addStreet">Вулиця та номер будинку:</label>
+                        <input type="text" id="addStreet" name="street" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addCity">Місто:</label>
+                        <input type="text" id="addCity" name="city" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addPostalCode">Поштовий індекс (необов'язково):</label>
+                        <input type="text" id="addPostalCode" name="postalCode">
+                    </div>
+                    <div class="form-group">
+                        <label for="addNotes">Примітки (наприклад, номер квартири, під'їзд):</label>
+                        <textarea id="addNotes" name="notes" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="btn-add-address">Додати адресу</button>
+                </form>
+            </section>
+
+            <section class="account-section orders-section">
+                <h2>Мої замовлення</h2>
+                <div id="ordersHistory">
+                    <p class="no-data-message" id="noOrdersMessage">Завантаження замовлень...</p>
+                </div>
+            </section>
+
+            <section class="account-section reviews-section">
+                <h2>Мої відгуки</h2>
+                <div id="leaveReviewFormModal" class="review-form-modal"> <h3>Залишити відгук про замовлення</h3>
+                    <form id="reviewForm" class="review-form">
+                        <div class="form-group">
+                            <label for="reviewableOrdersSelect">Виберіть замовлення:</label>
+                            <select id="reviewableOrdersSelect" name="order_id" required>
+                                <option value="">Завантаження замовлень...</option>
+                            </select>
+                            <p class="no-data-message" id="noReviewableOrdersMessage" style="display: none;">Немає замовлень, доступних для відгуку.</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Рейтинг:</label>
+                            <div class="rating-stars">
+                                <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="5 зірок"></label>
+                                <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 зірки"></label>
+                                <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 зірки"></label>
+                                <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 зірки"></label>
+                                <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 зірка"></label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reviewComment">Коментар (необов'язково):</label>
+                            <textarea id="reviewComment" name="comment" rows="4" placeholder="Ваш коментар до замовлення..."></textarea>
+                        </div>
+                        <button type="submit" class="btn-save">Надіслати відгук</button>
+                    </form>
+                </div>
+
+                <div id="myReviewsList">
+                    <p class="no-data-message" id="noMyReviewsMessage">Завантаження відгуків...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script>
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        const topbar = document.getElementById('topbar');
+        const fixedMenuBtn = document.querySelector('.fixed-menu-btn');
+
+        toggleButtons.forEach(btn => btn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            main.classList.toggle('shifted');
+            topbar.classList.toggle('shifted');
+            fixedMenuBtn.classList.toggle('shifted');
+        }));
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch("/api/logout")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.href = "{{ url_for('index') }}";
+                        } else {
+                            alert("Помилка при виході: " + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка:', error);
+                        alert('Виникла помилка під час виходу.');
+                    });
+            });
+        }
+
+        const cartBtn = document.getElementById('cartBtn');
+        if (cartBtn) {
+            cartBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('cart_page') }}";
+            });
+        }
+
+        const profileDisplay = document.getElementById('profileDisplay');
+        const profileEditForm = document.getElementById('profileEditForm');
+        const editProfileBtn = document.getElementById('editProfileBtn');
+        const cancelEditProfileBtn = document.getElementById('cancelEditProfileBtn');
+        const profileNameSpan = document.getElementById('profileName');
+        const profileEmailSpan = document.getElementById('profileEmail');
+        const editNameInput = document.getElementById('editName');
+        const editEmailInput = document.getElementById('editEmail');
+
+        async function fetchUserProfile() {
+            try {
+                const response = await fetch('/api/profile');
+                const data = await response.json();
+                if (data.profile) {
+                    profileNameSpan.textContent = data.profile.name;
+                    profileEmailSpan.textContent = data.profile.email;
+                    editNameInput.value = data.profile.name;
+                    editEmailInput.value = data.profile.email;
+                } else {
+                    profileNameSpan.textContent = 'Немає даних';
+                    profileEmailSpan.textContent = 'Немає даних';
+                    alert('Помилка завантаження профілю: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка завантаження профілю:', error);
+                alert('Виникла помилка під час завантаження профілю.');
+            }
+        }
+
+        editProfileBtn.addEventListener('click', () => {
+            profileDisplay.classList.add('hidden');
+            profileEditForm.classList.remove('hidden');
+        });
+
+        cancelEditProfileBtn.addEventListener('click', () => {
+            profileEditForm.classList.add('hidden');
+            profileDisplay.classList.remove('hidden');
+            editNameInput.value = profileNameSpan.textContent;
+            editEmailInput.value = profileEmailSpan.textContent;
+        });
+
+        profileEditForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(profileEditForm);
+            try {
+                const response = await fetch('/api/profile', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchUserProfile();
+                    profileEditForm.classList.add('hidden');
+                    profileDisplay.classList.remove('hidden');
+                } else {
+                    alert('Помилка оновлення профілю: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка оновлення профілю:', error);
+                alert('Виникла помилка під час оновлення профілю.');
+            }
+        });
+
+        const addressesList = document.getElementById('addressesList');
+        const addAddressForm = document.getElementById('addAddressForm');
+        const noAddressesMessage = document.getElementById('noAddressesMessage');
+
+        async function fetchAddresses() {
+            try {
+                const response = await fetch('/api/addresses');
+                const data = await response.json();
+                addressesList.innerHTML = '';
+
+                if (data.addresses && data.addresses.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('address-list');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Вулиця</th>
+                                <th>Місто</th>
+                                <th>Індекс</th>
+                                <th>Примітки</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    data.addresses.forEach(address => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${address.street}</td>
+                            <td>${address.city}</td>
+                            <td>${address.postal_code || '-'}</td>
+                            <td>${address.notes || '-'}</td>
+                            <td>
+                                <button class="btn-small btn-edit-address" data-id="${address.id}">Редагувати</button>
+                                <button class="btn-small btn-delete-address" data-id="${address.id}">Видалити</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    addressesList.appendChild(table);
+                    noAddressesMessage.style.display = 'none';
+                } else {
+                    addressesList.innerHTML = '<p class="no-data-message">У вас ще немає доданих адрес.</p>';
+                }
+            } catch (error) {
+                console.error('Помилка завантаження адрес:', error);
+                addressesList.innerHTML = '<p class="no-data-message">Не вдалося завантажити адреси.</p>';
+            }
+        }
+
+        addAddressForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(addAddressForm);
+            try {
+                const response = await fetch('/api/addresses', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    addAddressForm.reset();
+                    fetchAddresses();
+                } else {
+                    alert('Помилка додавання адреси: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка додавання адреси:', error);
+                alert('Виникла помилка під час додавання адреси.');
+            }
+        });
+
+        const ordersHistory = document.getElementById('ordersHistory');
+        const noOrdersMessage = document.getElementById('noOrdersMessage');
+
+        async function fetchOrders() {
+            try {
+                const response = await fetch('/api/orders');
+                const data = await response.json();
+                ordersHistory.innerHTML = '';
+
+                if (data.orders && data.orders.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('orders-table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>ID Замовлення</th>
+                                <th>Дата</th>
+                                <th>Ресторан</th>
+                                <th>Адреса доставки</th>
+                                <th>Статус</th>
+                                <th>Сума</th>
+                                <th>Позиції</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    data.orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        const itemsList = order.items.map(item => `
+                            <li>${item.dish_name} (x${item.quantity}) - ${item.unit_price} грн</li>
+                        `).join('');
+
+                        row.innerHTML = `
+                            <td>${order.order_id}</td>
+                            <td>${order.created_at}</td>
+                            <td>${order.restaurant_name || 'Невідомий'}</td>
+                            <td>${order.delivery_address}</td>
+                            <td>${order.status}</td>
+                            <td>${order.total_price} грн</td>
+                            <td><ul class="order-items-list">${itemsList}</ul></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    ordersHistory.appendChild(table);
+                    noOrdersMessage.style.display = 'none';
+                } else {
+                    ordersHistory.innerHTML = '<p class="no-data-message">У вас ще немає замовлень.</p>';
+                }
+            } catch (error) {
+                console.error('Помилка завантаження замовлень:', error);
+                ordersHistory.innerHTML = '<p class="no-data-message">Не вдалося завантажити замовлення.</p>';
+            }
+        }
+
+        const leaveReviewFormModal = document.getElementById('leaveReviewFormModal');
+        const reviewForm = document.getElementById('reviewForm');
+        const reviewableOrdersSelect = document.getElementById('reviewableOrdersSelect');
+        const noReviewableOrdersMessage = document.getElementById('noReviewableOrdersMessage');
+        const myReviewsList = document.getElementById('myReviewsList');
+        const noMyReviewsMessage = document.getElementById('noMyReviewsMessage');
+
+        async function fetchReviewableOrders() {
+            try {
+                const response = await fetch('/api/client/reviewable_orders');
+                const data = await response.json();
+                reviewableOrdersSelect.innerHTML = '<option value="">Виберіть замовлення</option>';
+
+                if (data.orders && data.orders.length > 0) {
+                    data.orders.forEach(order => {
+                        const option = document.createElement('option');
+                        option.value = order.order_id;
+                        option.textContent = `Замовлення №${order.order_id} (${order.restaurant_name} від ${order.created_at})`;
+                        reviewableOrdersSelect.appendChild(option);
+                    });
+                    noReviewableOrdersMessage.style.display = 'none';
+                    reviewableOrdersSelect.disabled = false;
+                    reviewForm.querySelector('button[type="submit"]').disabled = false;
+                } else {
+                    reviewableOrdersSelect.innerHTML = '<option value="">Немає доступних замовлень для відгуку</option>';
+                    noReviewableOrdersMessage.style.display = 'block';
+                    reviewableOrdersSelect.disabled = true;
+                    reviewForm.querySelector('button[type="submit"]').disabled = true;
+                }
+            } catch (error) {
+                console.error('Помилка завантаження замовлень для відгуку:', error);
+                reviewableOrdersSelect.innerHTML = '<option value="">Помилка завантаження замовлень</option>';
+                noReviewableOrdersMessage.style.display = 'block';
+                reviewableOrdersSelect.disabled = true;
+                reviewForm.querySelector('button[type="submit"]').disabled = true;
+            }
+        }
+
+        async function fetchUserReviews() {
+            try {
+                const response = await fetch('/api/client/reviews');
+                const data = await response.json();
+                myReviewsList.innerHTML = '';
+
+                if (data.reviews && data.reviews.length > 0) {
+                    data.reviews.forEach(review => {
+                        const reviewCard = document.createElement('div');
+                        reviewCard.classList.add('review-card');
+                        let stars = '';
+                        for (let i = 0; i < review.rating; i++) {
+                            stars += '★';
+                        }
+                        for (let i = review.rating; i < 5; i++) {
+                            stars += '☆';
+                        }
+
+                        reviewCard.innerHTML = `
+                            <h3>Відгук на ${review.restaurant_name} (Замовлення №${review.order_id})</h3>
+                            <p>Рейтинг: <span class="review-rating-stars">${stars}</span></p>
+                            <p>Коментар: ${review.comment || 'Немає коментаря.'}</p>
+                            <p>Дата: ${review.created_at}</p>
+                        `;
+                        myReviewsList.appendChild(reviewCard);
+                    });
+                    noMyReviewsMessage.style.display = 'none';
+                } else {
+                    myReviewsList.innerHTML = '<p class="no-data-message">Ви ще не залишили жодного відгуку.</p>';
+                }
+            } catch (error) {
+                console.error('Помилка завантаження відгуків користувача:', error);
+                myReviewsList.innerHTML = '<p class="no-data-message">Не вдалося завантажити ваші відгуки.</p>';
+            }
+        }
+
+        reviewForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const orderId = reviewableOrdersSelect.value;
+            const rating = document.querySelector('input[name="rating"]:checked');
+            const comment = document.getElementById('reviewComment').value;
+
+            if (!orderId) {
+                alert('Будь ласка, виберіть замовлення для відгуку.');
+                return;
+            }
+            if (!rating) {
+                alert('Будь ласка, поставте рейтинг.');
+                return;
+            }
+
+            const reviewData = {
+                order_id: parseInt(orderId),
+                rating: parseInt(rating.value),
+                comment: comment
+            };
+
+            try {
+                const response = await fetch('/api/reviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(reviewData)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    reviewForm.reset();
+                    document.querySelectorAll('.rating-stars input[name="rating"]').forEach(radio => radio.checked = false);
+                    fetchUserReviews();
+                    fetchReviewableOrders();
+                } else {
+                    alert('Помилка додавання відгуку: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка відправки відгуку:', error);
+                alert('Виникла помилка під час надсилання відгуку.');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchUserProfile();
+            fetchAddresses();
+            fetchOrders();
+            fetchUserReviews();
+            fetchReviewableOrders();
+        });
+    </script>
+</body>
+</html>

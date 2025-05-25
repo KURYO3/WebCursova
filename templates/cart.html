@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мій кошик</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .cart-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 900px;
+            margin-top: 100px;
+            margin-left: 280px;
+            transition: margin-left 0.3s ease, width 0.3s ease;
+        }
+        .cart-container.shifted {
+            margin-left: calc(250px + 40px);
+            width: calc(900px - 250px);
+        }
+        .cart-container h1 {
+            color: var(--color-dark);
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 15px;
+        }
+        .cart-items {
+            margin-bottom: 20px;
+        }
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            gap: 15px;
+        }
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        .cart-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .item-details {
+            flex-grow: 1;
+        }
+        .item-details h3 {
+            margin: 0 0 5px 0;
+            color: var(--color-dark);
+            font-size: 1.2em;
+        }
+        .item-details p {
+            margin: 0;
+            color: #777;
+            font-size: 0.9em;
+        }
+        .item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .item-quantity button {
+            background-color: var(--color-light);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease;
+        }
+        .item-quantity button:hover {
+            background-color: #e0e0e0;
+        }
+        .item-quantity input {
+            width: 50px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            font-size: 1em;
+        }
+        .item-price {
+            font-weight: bold;
+            color: var(--color-primary);
+            font-size: 1.1em;
+            width: 100px;
+            text-align: right;
+        }
+        .remove-item-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 10px;
+            transition: color 0.2s ease;
+        }
+        .remove-item-btn:hover {
+            color: #c82333;
+        }
+        .cart-summary {
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+            text-align: right;
+        }
+        .cart-summary p {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--color-dark);
+            margin: 0 0 10px 0;
+        }
+        .cart-summary span {
+            color: var(--color-primary);
+        }
+        .checkout-btn {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            display: block;
+            text-align: center;
+            text-decoration: none;
+        }
+        .checkout-btn:hover {
+            background-color: var(--color-dark);
+        }
+        .empty-cart-message {
+            text-align: center;
+            color: #777;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-btn toggle-btn fixed-menu-btn">☰</button>
+
+    <nav class="sidebar" id="sidebar">
+        <ul class="menu-list">
+            <li><a href="{{ url_for('index') }}" id="mainPageBtn">Пошук страв</a></li>
+            {% if user_logged_in %}
+                <li><a href="#" id="accountBtn">Мій акаунт</a></li>
+                <li><a href="#" id="logoutBtn">Вийти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login_page') }}">Увійти / Реєстрація</a></li>
+            {% endif %}
+
+            <li><a href="{{ url_for('restaurants_page') }}">Ресторани</a></li>
+        </ul>
+    </nav>
+    <div class="topbar" id="topbar">
+        <img src="{{ url_for('static', filename='logo2.png') }}" alt="Logo" class="logo" onclick="location.href='{{ url_for('index') }}'">
+    </div>
+    <div id="main">
+        <main class="content">
+            <div class="cart-container" id="cartContainer">
+                <h1>Мій кошик</h1>
+                <div id="cartItemsContainer" class="cart-items">
+                    <p class="empty-cart-message">Ваш кошик порожній.</p>
+                </div>
+                <div class="cart-summary">
+                    <p>Загальна сума: <span id="cartTotalPrice">0.00 грн</span></p>
+                    <button class="checkout-btn" id="proceedToCheckoutBtn">Перейти до оформлення замовлення</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        const topbar = document.getElementById('topbar');
+        const fixedMenuBtn = document.querySelector('.fixed-menu-btn');
+        const cartContainer = document.getElementById('cartContainer');
+
+        toggleButtons.forEach(btn => btn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            main.classList.toggle('shifted');
+            topbar.classList.toggle('shifted');
+            fixedMenuBtn.classList.toggle('shifted');
+            cartContainer.classList.toggle('shifted');
+        }));
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch("/api/logout")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.href = "{{ url_for('index') }}";
+                        } else {
+                            alert("Помилка при виході: " + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка:', error);
+                        alert('Виникла помилка під час виходу.');
+                    });
+            });
+        }
+
+        const cartBtn = document.getElementById('cartBtn');
+        if (cartBtn) {
+            cartBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('cart_page') }}";
+            });
+        }
+
+        const mainPageBtn = document.getElementById('mainPageBtn');
+        if (mainPageBtn) {
+            mainPageBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('index') }}";
+            });
+        }
+
+        const restaurantsPageBtn = document.querySelector('a[href="{{ url_for('restaurants_page') }}"]');
+        if (restaurantsPageBtn) {
+            restaurantsPageBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('restaurants_page') }}";
+            });
+        }
+
+        const accountBtn = document.getElementById('accountBtn');
+        if (accountBtn) {
+            accountBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('my_account_route') }}";
+            });
+        }
+
+        const cartItemsContainer = document.getElementById('cartItemsContainer');
+        const cartTotalPriceSpan = document.getElementById('cartTotalPrice');
+        const proceedToCheckoutBtn = document.getElementById('proceedToCheckoutBtn');
+
+        function getCart() {
+            const cartString = sessionStorage.getItem('cart');
+            return cartString ? JSON.parse(cartString) : [];
+        }
+
+        function saveCart(cart) {
+            sessionStorage.setItem('cart', JSON.stringify(cart));
+            renderCart();
+        }
+
+        function renderCart() {
+            const cart = getCart();
+            cartItemsContainer.innerHTML = '';
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="empty-cart-message">Ваш кошик порожній.</p>';
+                cartTotalPriceSpan.textContent = '0.00 грн';
+                proceedToCheckoutBtn.disabled = true;
+                return;
+            }
+
+            let totalPrice = 0;
+
+            cart.forEach(item => {
+                const itemPrice = typeof item.price === 'number' ? item.price : 0;
+                const itemQuantity = typeof item.quantity === 'number' ? item.quantity : 0;
+
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('cart-item');
+                const imageUrl = item.image_url || "{{ url_for('static', filename='placeholder_food.png') }}";
+
+                itemDiv.innerHTML = `
+                    <img src="${imageUrl}" alt="${item.name}">
+                    <div class="item-details">
+                        <h3>${item.name}</h3>
+                        <p>${(itemPrice * itemQuantity).toFixed(2)} грн</p>
+                    </div>
+                    <div class="item-quantity">
+                        <button class="decrease-quantity-btn" data-id="${item.id}">-</button>
+                        <input type="number" value="${itemQuantity}" min="1" class="quantity-input" data-id="${item.id}">
+                        <button class="increase-quantity-btn" data-id="${item.id}">+</button>
+                    </div>
+                    <p class="item-price">${itemPrice.toFixed(2)} грн/шт</p>
+                    <button class="remove-item-btn" data-id="${item.id}"><i class="fas fa-trash"></i></button>
+                `;
+                cartItemsContainer.appendChild(itemDiv);
+                totalPrice += itemPrice * itemQuantity;
+            });
+
+            cartTotalPriceSpan.textContent = totalPrice.toFixed(2) + ' грн';
+            proceedToCheckoutBtn.disabled = false;
+
+            attachCartEventListeners();
+        }
+
+        function attachCartEventListeners() {
+            document.querySelectorAll('.increase-quantity-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const dishId = parseInt(e.target.dataset.id);
+                    const cart = getCart();
+                    const item = cart.find(i => i.id === dishId);
+                    if (item) {
+                        item.quantity++;
+                        saveCart(cart);
+                    }
+                };
+            });
+
+            document.querySelectorAll('.decrease-quantity-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const dishId = parseInt(e.target.dataset.id);
+                    const cart = getCart();
+                    const itemIndex = cart.findIndex(i => i.id === dishId);
+                    if (itemIndex !== -1) {
+                        if (cart[itemIndex].quantity > 1) {
+                            cart[itemIndex].quantity--;
+                        } else {
+                            cart.splice(itemIndex, 1);
+                        }
+                        saveCart(cart);
+                    }
+                };
+            });
+
+            document.querySelectorAll('.quantity-input').forEach(input => {
+                input.onchange = (e) => {
+                    const dishId = parseInt(e.target.dataset.id);
+                    let newQuantity = parseInt(e.target.value);
+                    if (isNaN(newQuantity) || newQuantity < 1) {
+                        newQuantity = 1;
+                        e.target.value = 1;
+                    }
+                    const cart = getCart();
+                    const item = cart.find(i => i.id === dishId);
+                    if (item) {
+                        item.quantity = newQuantity;
+                        saveCart(cart);
+                    }
+                };
+            });
+
+            document.querySelectorAll('.remove-item-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const clickedButton = e.currentTarget;
+                    const dishId = parseInt(clickedButton.dataset.id);
+                    let cart = getCart();
+                    cart = cart.filter(item => item.id !== dishId);
+                    saveCart(cart);
+                };
+            });
+        }
+
+        proceedToCheckoutBtn.addEventListener('click', () => {
+            const cart = getCart();
+            if (cart.length > 0) {
+                const firstRestaurantId = cart[0].restaurant_id;
+                const allSameRestaurant = cart.every(item => item.restaurant_id === firstRestaurantId);
+
+                if (allSameRestaurant) {
+                    window.location.href = "{{ url_for('checkout_page') }}";
+                } else {
+                    alert('Замовлення може містити страви лише з одного ресторану. Будь ласка, оформіть окремі замовлення.');
+                }
+            } else {
+                alert('Кошик порожній!');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCart();
+        });
+    </script>
+</body>
+</html>

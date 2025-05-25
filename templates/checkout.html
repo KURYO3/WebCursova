@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оформлення замовлення</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .checkout-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 900px;
+            margin-top: 100px;
+            margin-left: 280px;
+            transition: margin-left 0.3s ease, width 0.3s ease;
+        }
+        .checkout-container.shifted {
+            margin-left: calc(250px + 40px);
+            width: calc(900px - 250px);
+        }
+        .checkout-container h1 {
+            color: var(--color-dark);
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 15px;
+        }
+        .checkout-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .checkout-section h2 {
+            color: var(--color-dark);
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .cart-summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #ddd;
+        }
+        .cart-summary-item:last-child {
+            border-bottom: none;
+        }
+        .cart-summary-item span {
+            color: #555;
+        }
+        .cart-summary-total {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: var(--color-primary);
+            text-align: right;
+            margin-top: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #444;
+        }
+        .form-group select,
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(232, 49, 0, 0.2);
+        }
+        .place-order-btn {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+        }
+        .place-order-btn:hover {
+            background-color: var(--color-dark);
+        }
+        .no-data-message {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-btn toggle-btn fixed-menu-btn">☰</button>
+
+    <nav class="sidebar" id="sidebar">
+        <ul class="menu-list">
+            <li><a href="{{ url_for('index') }}" id="mainPageBtn">Пошук страв</a></li>
+            {% if user_logged_in %}
+                <li><a href="#" id="accountBtn">Мій акаунт</a></li>
+                <li><a href="#" id="cartBtn">Кошик</a></li>
+                <li><a href="#" id="logoutBtn">Вийти</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login_page') }}">Увійти / Реєстрація</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('restaurants_page') }}">Ресторани</a></li>
+        </ul>
+    </nav>
+    <div class="topbar" id="topbar">
+        <img src="{{ url_for('static', filename='logo2.png') }}" alt="Logo" class="logo" onclick="location.href='{{ url_for('index') }}'">
+    </div>
+    <div id="main">
+        <main class="content">
+            <div class="checkout-container" id="checkoutContainer">
+                <h1>Оформлення замовлення</h1>
+
+                <div class="checkout-section">
+                    <h2>Ваше замовлення</h2>
+                    <div id="checkoutCartSummary">
+                        <p class="no-data-message">Кошик порожній. Будь ласка, додайте товари.</p>
+                    </div>
+                    <p class="cart-summary-total">Загальна сума: <span id="checkoutTotalPrice">0.00 грн</span></p>
+                </div>
+
+                <div class="checkout-section">
+                    <h2>Адреса доставки</h2>
+                    <div class="form-group">
+                        <label for="deliveryAddressSelect">Виберіть адресу:</label>
+                        <select id="deliveryAddressSelect" required>
+                            <option value="">Завантаження адрес...</option>
+                        </select>
+                    </div>
+                    <p class="no-data-message" id="noAddressesMessage" style="display: none;">У вас немає доданих адрес. Будь ласка, додайте їх у <a href="{{ url_for('my_account_route') }}">Моєму акаунті</a>.</p>
+                </div>
+
+                <div class="checkout-section">
+                    <h2>Метод оплати</h2>
+                    <div class="form-group">
+                        <label for="paymentMethodSelect">Виберіть метод оплати:</label>
+                        <select id="paymentMethodSelect" required>
+                            <option value="card">Картка онлайн</option>
+                            <option value="cash">Готівка при отриманні</option>
+                            <option value="apple_pay">Apple Pay</option>
+                            <option value="google_pay">Google Pay</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkout-section">
+                    <h2>Коментар до замовлення (необов'язково)</h2>
+                    <div class="form-group">
+                        <textarea id="orderComment" rows="3" placeholder="Наприклад: 'Не дзвонити у двері', 'Залишити біля дверей'"></textarea>
+                    </div>
+                </div>
+
+                <button class="place-order-btn" id="placeOrderBtn">Підтвердити замовлення</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        const topbar = document.getElementById('topbar');
+        const fixedMenuBtn = document.querySelector('.fixed-menu-btn');
+        const checkoutContainer = document.getElementById('checkoutContainer');
+
+        toggleButtons.forEach(btn => btn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            main.classList.toggle('shifted');
+            topbar.classList.toggle('shifted');
+            fixedMenuBtn.classList.toggle('shifted');
+            checkoutContainer.classList.toggle('shifted');
+        }));
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch("/api/logout")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.href = "{{ url_for('index') }}";
+                        } else {
+                            alert("Помилка при виході: " + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка:', error);
+                        alert('Виникла помилка під час виходу.');
+                    });
+            });
+        }
+
+        const cartBtn = document.getElementById('cartBtn');
+        if (cartBtn) {
+            cartBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('cart_page') }}";
+            });
+        }
+
+        const mainPageBtn = document.getElementById('mainPageBtn');
+        if (mainPageBtn) {
+            mainPageBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('index') }}";
+            });
+        }
+
+        const restaurantsPageBtn = document.querySelector('a[href="{{ url_for('restaurants_page') }}"]');
+        if (restaurantsPageBtn) {
+            restaurantsPageBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('restaurants_page') }}";
+            });
+        }
+
+        const accountBtn = document.getElementById('accountBtn');
+        if (accountBtn) {
+            accountBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = "{{ url_for('my_account_route') }}";
+            });
+        }
+
+        const checkoutCartSummary = document.getElementById('checkoutCartSummary');
+        const checkoutTotalPriceSpan = document.getElementById('checkoutTotalPrice');
+        const deliveryAddressSelect = document.getElementById('deliveryAddressSelect');
+        const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+        const orderCommentInput = document.getElementById('orderComment');
+        const placeOrderBtn = document.getElementById('placeOrderBtn');
+        const noAddressesMessage = document.getElementById('noAddressesMessage');
+
+        let cartItems = [];
+        let userAddresses = [];
+
+        function getCart() {
+            const cartString = sessionStorage.getItem('cart');
+            return cartString ? JSON.parse(cartString) : [];
+        }
+
+        function renderCheckoutSummary() {
+            cartItems = getCart();
+            checkoutCartSummary.innerHTML = '';
+            let total = 0;
+
+            if (cartItems.length === 0) {
+                checkoutCartSummary.innerHTML = '<p class="no-data-message">Кошик порожній. Будь ласка, додайте товари.</p>';
+                checkoutTotalPriceSpan.textContent = '0.00 грн';
+                placeOrderBtn.disabled = true;
+                return;
+            }
+
+            cartItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('cart-summary-item');
+                itemDiv.innerHTML = `
+                    <span>${item.name} x ${item.quantity}</span>
+                    <span>${(item.price * item.quantity).toFixed(2)} грн</span>
+                `;
+                checkoutCartSummary.appendChild(itemDiv);
+                total += item.price * item.quantity;
+            });
+
+            checkoutTotalPriceSpan.textContent = total.toFixed(2) + ' грн';
+            placeOrderBtn.disabled = false;
+        }
+
+        async function fetchUserAddresses() {
+            try {
+                const response = await fetch('/api/addresses');
+                const data = await response.json();
+                userAddresses = data.addresses || [];
+                populateAddressesSelect(userAddresses);
+            } catch (error) {
+                console.error('Помилка завантаження адрес:', error);
+                deliveryAddressSelect.innerHTML = '<option value="">Помилка завантаження адрес</option>';
+                noAddressesMessage.style.display = 'block';
+                placeOrderBtn.disabled = true;
+            }
+        }
+
+        function populateAddressesSelect(addresses) {
+            deliveryAddressSelect.innerHTML = '';
+            if (addresses.length === 0) {
+                deliveryAddressSelect.innerHTML = '<option value="">Немає доступних адрес</option>';
+                noAddressesMessage.style.display = 'block';
+                placeOrderBtn.disabled = true;
+            } else {
+                noAddressesMessage.style.display = 'none';
+                addresses.forEach(address => {
+                    const option = document.createElement('option');
+                    option.value = address.id;
+                    option.textContent = `${address.street}, ${address.city} ${address.postal_code ? '(' + address.postal_code + ')' : ''} ${address.notes ? ' - ' + address.notes : ''}`;
+                    deliveryAddressSelect.appendChild(option);
+                });
+                placeOrderBtn.disabled = false;
+            }
+        }
+
+        placeOrderBtn.addEventListener('click', async () => {
+            const selectedAddressId = deliveryAddressSelect.value;
+            const selectedPaymentMethod = paymentMethodSelect.value;
+            const comment = orderCommentInput.value.trim();
+
+            if (!selectedAddressId) {
+                alert('Будь ласка, виберіть адресу доставки.');
+                return;
+            }
+            if (!selectedPaymentMethod) {
+                alert('Будь ласка, виберіть метод оплати.');
+                return;
+            }
+            if (cartItems.length === 0) {
+                alert('Ваш кошик порожній. Будь ласка, додайте товари.');
+                return;
+            }
+
+            const firstRestaurantId = cartItems[0].restaurant_id;
+            const allSameRestaurant = cartItems.every(item => item.restaurant_id === firstRestaurantId);
+            if (!allSameRestaurant) {
+                alert('Замовлення може містити страви лише з одного ресторану. Будь ласка, оформіть окремі замовлення.');
+                return;
+            }
+
+            const orderData = {
+                address_id: selectedAddressId,
+                payment_method: selectedPaymentMethod,
+                comment: comment,
+                cart_items: cartItems.map(item => ({
+                    id: item.id,
+                    quantity: item.quantity
+                }))
+            };
+
+            try {
+                const response = await fetch('/api/checkout/place_order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    sessionStorage.removeItem('cart');
+                    window.location.href = "{{ url_for('my_account_route') }}";
+                } else {
+                    alert('Помилка оформлення замовлення: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка при відправці замовлення:', error);
+                alert('Виникла помилка під час оформлення замовлення.');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCheckoutSummary();
+            fetchUserAddresses();
+        });
+    </script>
+</body>
+</html>

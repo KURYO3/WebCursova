@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мій акаунт (Адміністратор)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .account-section {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 1200px;
+            margin-left: 145px;
+            transition: margin-left var(--transition) ease;
+        }
+        .account-section.shifted {
+            margin-left: 20px;
+        }
+        .account-section h2 {
+            color: var(--color-dark);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+        .btn-action, .btn-save, .btn-cancel {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        .btn-action:hover, .btn-save:hover {
+            background-color: var(--color-dark);
+        }
+        .btn-cancel {
+            background-color: #6c757d;
+        }
+        .btn-cancel:hover {
+            background-color: #5a6268;
+        }
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #444;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="number"],
+        .form-group input[type="tel"],
+        .form-group textarea,
+        .form-group select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(232, 49, 0, 0.2);
+        }
+        .edit-form.hidden {
+            display: none;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        .data-table th {
+            background-color: var(--color-light);
+            color: var(--color-dark);
+            border-bottom: 2px solid var(--color-primary);
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .data-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        .no-data-message {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+            font-style: italic;
+        }
+        .dish-image-preview {
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .order-items-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .order-items-list li {
+            margin-bottom: 3px;
+        }
+        .order-status-select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            margin-top: 50px;
+            border-bottom: 2px solid #ddd;
+        }
+        .tab-button {
+            background-color: #f1f1f1;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 20px;
+            transition: 0.3s;
+            font-size: 1.1em;
+            color: var(--color-dark);
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            margin-right: 5px;
+        }
+        .tab-button:hover {
+            background-color: #e9e9e9;
+        }
+        .tab-button.active {
+            background-color: var(--color-primary);
+            color: white;
+            border-bottom: 2px solid var(--color-primary);
+            margin-bottom: -2px;
+        }
+        .tab-content {
+            display: none;
+            padding-top: 20px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-btn toggle-btn fixed-menu-btn">☰</button>
+    <nav class="sidebar" id="sidebar">
+        <ul class="menu-list">
+            <li><a href="{{ url_for('index') }}">Головна</a></li>
+            <li><a href="#" id="logoutBtn">Вийти</a></li>
+        </ul>
+    </nav>
+    <div class="topbar" id="topbar">
+        <img src="{{ url_for('static', filename='logo2.png') }}" alt="Logo" class="logo" onclick="location.href='{{ url_for('index') }}'">
+    </div>
+    <div id="main">
+        <main class="content">
+            <h1>Панель адміністратора</h1>
+
+            <div class="tabs">
+                <button class="tab-button active" data-tab="users">Користувачі</button>
+                <button class="tab-button" data-tab="orders">Замовлення</button>
+                <button class="tab-button" data-tab="dishes">Страви</button>
+            </div>
+
+            <div id="users" class="tab-content active account-section">
+                <h2>Керування користувачами</h2>
+                <div id="usersList">
+                    <p class="no-data-message">Завантаження користувачів...</p>
+                </div>
+
+                <div id="editUserModal" class="edit-form hidden">
+                    <h3>Редагувати користувача</h3>
+                    <form id="editUserForm">
+                        <input type="hidden" id="editUserId" name="user_id">
+                        <div class="form-group">
+                            <label for="editUserName">Ім'я:</label>
+                            <input type="text" id="editUserName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editUserEmail">Email:</label>
+                            <input type="email" id="editUserEmail" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editUserRole">Роль:</label>
+                            <select id="editUserRole" name="role_id" required>
+                                </select>
+                        </div>
+                        <div class="form-group">
+                            <input type="checkbox" id="editUserActive" name="is_active">
+                            <label for="editUserActive" style="display: inline-block; margin-left: 10px;">Активний</label>
+                        </div>
+                        <button type="submit" class="btn-save">Зберегти</button>
+                        <button type="button" class="btn-cancel" id="cancelEditUserBtn">Скасувати</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="orders" class="tab-content account-section">
+                <h2>Керування замовленнями</h2>
+                <div id="ordersList">
+                    <p class="no-data-message">Завантаження замовлень...</p>
+                </div>
+            </div>
+
+            <div id="dishes" class="tab-content account-section">
+                <h2>Керування стравами</h2>
+                <div id="dishesList">
+                    <p class="no-data-message">Завантаження страв...</p>
+                </div>
+
+                <div id="editDishModal" class="edit-form hidden">
+                    <h3>Редагувати страву</h3>
+                    <form id="editDishForm">
+                        <input type="hidden" id="editDishId" name="dish_id">
+                        <div class="form-group">
+                            <label for="editDishName">Назва страви:</label>
+                            <input type="text" id="editDishName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDishDescription">Опис:</label>
+                            <textarea id="editDishDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDishPrice">Ціна (грн):</label>
+                            <input type="number" id="editDishPrice" name="price" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDishImageUrl">URL зображення:</label>
+                            <input type="text" id="editDishImageUrl" name="image_url">
+                            <img id="editDishImagePreview" class="dish-image-preview" src="" alt="Попередній перегляд" style="display:none;">
+                        </div>
+                        <div class="form-group">
+                            <label for="editDishCategory">Категорія:</label>
+                            <select id="editDishCategory" name="category_id" required>
+                                </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDishRestaurant">Ресторан:</label>
+                            <select id="editDishRestaurant" name="restaurant_id" required>
+                                </select>
+                        </div>
+                        <div class="form-group">
+                            <input type="checkbox" id="editDishAvailable" name="is_available">
+                            <label for="editDishAvailable" style="display: inline-block; margin-left: 10px;">Доступна</label>
+                        </div>
+                        <button type="submit" class="btn-save">Зберегти зміни</button>
+                        <button type="button" class="btn-cancel" id="cancelEditDishBtn">Скасувати</button>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script>
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        const topbar = document.getElementById('topbar');
+        const fixedMenuBtn = document.querySelector('.fixed-menu-btn');
+        const users = document.getElementById('users');
+        const orders = document.getElementById('orders');
+        const dishes = document.getElementById('dishes');
+
+        toggleButtons.forEach(btn => btn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            main.classList.toggle('shifted');
+            topbar.classList.toggle('shifted');
+            fixedMenuBtn.classList.toggle('shifted');
+            users.classList.toggle('shifted');
+            orders.classList.toggle('shifted');
+            dishes.classList.toggle('shifted');
+        }));
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch("/api/logout")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.href = "{{ url_for('index') }}";
+                        } else {
+                            alert("Помилка при виході: " + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка:', error);
+                        alert('Виникла помилка під час виходу.');
+                    });
+            });
+        }
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        function openTab(tabName) {
+            tabContents.forEach(tab => tab.classList.remove('active'));
+            tabButtons.forEach(button => button.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`.tab-button[data-tab="${tabName}"]`).classList.add('active');
+
+            if (tabName === 'users') {
+                fetchUsers();
+            } else if (tabName === 'orders') {
+                fetchOrdersAdmin();
+            } else if (tabName === 'dishes') {
+                fetchDishesAdmin();
+            }
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                openTab(button.dataset.tab);
+            });
+        });
+
+        let allCategories = [];
+        let allRestaurants = [];
+        let allRoles = [];
+
+        async function fetchCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                const data = await response.json();
+                if (data.categories) {
+                    allCategories = data.categories;
+                    console.log("Завантажено категорії:", allCategories);
+                }
+            } catch (error) {
+                console.error('Помилка завантаження категорій:', error);
+            }
+        }
+
+        function populateCategorySelect(selectElement, categories, selectedId = null) {
+            selectElement.innerHTML = '<option value="">Оберіть категорію</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                if (selectedId !== null && category.id === selectedId) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+            console.log("Заповнено категорії для елемента:", selectElement.id, "Вибрано:", selectedId);
+        }
+
+        async function fetchRestaurantsForDishEdit() {
+            try {
+                const response = await fetch('/api/restaurants');
+                const data = await response.json();
+                if (data.restaurants) {
+                    allRestaurants = data.restaurants;
+                    console.log("Завантажено ресторани:", allRestaurants);
+                }
+            } catch (error) {
+                console.error('Помилка завантаження ресторанів:', error);
+            }
+        }
+
+        function populateRestaurantSelect(selectElement, restaurants, selectedId = null) {
+            selectElement.innerHTML = '<option value="">Оберіть ресторан</option>';
+            restaurants.forEach(restaurant => {
+                const option = document.createElement('option');
+                option.value = restaurant.id;
+                option.textContent = restaurant.name;
+                if (selectedId !== null && restaurant.id === selectedId) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+            console.log("Заповнено ресторани для елемента:", selectElement.id, "Вибрано:", selectedId);
+        }
+
+        async function fetchRoles() {
+            try {
+                const response = await fetch('/api/roles');
+                const data = await response.json();
+                if (data.roles) {
+                    allRoles = data.roles.filter(role => role.id !== 3);
+                    console.log("Завантажено ролі (без адміна):", allRoles);
+                }
+            } catch (error) {
+                console.error('Помилка завантаження ролей:', error);
+            }
+        }
+
+        function populateRoleSelect(selectElement, roles, selectedId = null) {
+            selectElement.innerHTML = '';
+            roles.forEach(role => {
+                const option = document.createElement('option');
+                option.value = role.id;
+                option.textContent = role.name;
+                if (selectedId !== null && role.id === selectedId) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+            console.log("Заповнено ролі для елемента:", selectElement.id, "Вибрано:", selectedId);
+        }
+
+        const usersListDiv = document.getElementById('usersList');
+        const editUserModal = document.getElementById('editUserModal');
+        const editUserForm = document.getElementById('editUserForm');
+        const cancelEditUserBtn = document.getElementById('cancelEditUserBtn');
+        const editUserIdInput = document.getElementById('editUserId');
+        const editUserNameInput = document.getElementById('editUserName');
+        const editUserEmailInput = document.getElementById('editUserEmail');
+        const editUserRoleSelect = document.getElementById('editUserRole');
+        const editUserActiveCheckbox = document.getElementById('editUserActive');
+
+        async function fetchUsers() {
+            try {
+                const response = await fetch('/api/admin/users');
+                const data = await response.json();
+                usersListDiv.innerHTML = '';
+
+                if (data.users && data.users.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('data-table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Ім'я</th>
+                                <th>Email</th>
+                                <th>Роль</th>
+                                <th>Ресторан</th>
+                                <th>Активний</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.user_id}</td>
+                            <td>${user.user_name}</td>
+                            <td>${user.email}</td>
+                            <td>${user.role_name}</td>
+                            <td>${user.restaurant_name || '-'}</td>
+                            <td>${user.is_active ? 'Так' : 'Ні'}</td>
+                            <td>
+                                <button class="btn-action edit-user-btn" data-user='${JSON.stringify(user)}'>Редагувати</button>
+                                <button class="btn-delete delete-user-btn" data-id="${user.user_id}">Видалити</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    usersListDiv.appendChild(table);
+                } else {
+                    usersListDiv.innerHTML = '<p class="no-data-message">Користувачів не знайдено.</p>';
+                }
+                attachUserActionListeners();
+            } catch (error) {
+                console.error('Помилка завантаження користувачів:', error);
+                usersListDiv.innerHTML = '<p class="no-data-message">Не вдалося завантажити користувачів.</p>';
+            }
+        }
+
+        function attachUserActionListeners() {
+            document.querySelectorAll('.edit-user-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const user = JSON.parse(e.currentTarget.dataset.user);
+                    editUser(user);
+                });
+            });
+            document.querySelectorAll('.delete-user-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const userId = e.currentTarget.dataset.id;
+                    if (confirm('Ви впевнені, що хочете видалити цього користувача? Це також видалить пов\'язані ресторани, адреси та замовлення!')) {
+                        deleteUser(userId);
+                    }
+                });
+            });
+        }
+
+        function editUser(user) {
+            editUserIdInput.value = user.user_id;
+            editUserNameInput.value = user.user_name;
+            editUserEmailInput.value = user.email;
+            editUserActiveCheckbox.checked = user.is_active;
+            populateRoleSelect(editUserRoleSelect, allRoles, user.role_id);
+            editUserModal.classList.remove('hidden');
+        }
+
+        cancelEditUserBtn.addEventListener('click', () => {
+            editUserModal.classList.add('hidden');
+        });
+
+        editUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = editUserIdInput.value;
+            const formData = new FormData(editUserForm);
+            if (editUserActiveCheckbox.checked) {
+                formData.append('is_active', 'true');
+            } else {
+                // Якщо чекбокс не відмічений, не додаємо 'is_active' взагалі.
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    editUserModal.classList.add('hidden');
+                    fetchUsers();
+                } else {
+                    alert('Помилка оновлення користувача: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка оновлення користувача:', error);
+                alert('Виникла помилка під час оновлення користувача.');
+            }
+        });
+
+        async function deleteUser(userId) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchUsers();
+                } else {
+                    alert('Помилка видалення користувача: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка видалення користувача:', error);
+                alert('Виникла помилка під час видалення користувача.');
+            }
+        }
+
+        const ordersListDiv = document.getElementById('ordersList');
+
+        async function fetchOrdersAdmin() {
+            try {
+                const response = await fetch('/api/admin/orders');
+                const data = await response.json();
+                ordersListDiv.innerHTML = '';
+
+                if (data.orders && data.orders.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('data-table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>ID Замовлення</th>
+                                <th>Дата</th>
+                                <th>Клієнт (Email)</th>
+                                <th>Ресторан</th>
+                                <th>Адреса доставки</th>
+                                <th>Статус</th>
+                                <th>Сума</th>
+                                <th>Позиції</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    data.orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        const itemsList = order.items.map(item => `
+                            <li>${item.dish_name} (x${item.quantity}) - ${item.unit_price} грн</li>
+                        `).join('');
+
+                        row.innerHTML = `
+                            <td>${order.order_id}</td>
+                            <td>${order.created_at}</td>
+                            <td>${order.user_name} (${order.user_email})</td>
+                            <td>${order.restaurant_name}</td>
+                            <td>${order.delivery_address}</td>
+                            <td>
+                                <select class="order-status-select" data-order-id="${order.order_id}">
+                                    <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Очікує</option>
+                                    <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>Готується</option>
+                                    <option value="ready" ${order.status === 'ready' ? 'selected' : ''}>Готове</option>
+                                    <option value="in_transit" ${order.status === 'in_transit' ? 'selected' : ''}>В дорозі</option>
+                                    <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Доставлено</option>
+                                    <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Скасовано</option>
+                                </select>
+                            </td>
+                            <td>${order.total_price} грн</td>
+                            <td><ul class="order-items-list">${itemsList}</ul></td>
+                            <td>
+                                <button class="btn-action update-order-status-btn" data-id="${order.order_id}">Оновити</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    ordersListDiv.appendChild(table);
+                } else {
+                    ordersListDiv.innerHTML = '<p class="no-data-message">Замовлень не знайдено.</p>';
+                }
+                attachOrderStatusListenersAdmin();
+            } catch (error) {
+                console.error('Помилка завантаження замовлень:', error);
+                ordersListDiv.innerHTML = '<p class="no-data-message">Не вдалося завантажити замовлення.</p>';
+            }
+        }
+
+        function attachOrderStatusListenersAdmin() {
+            document.querySelectorAll('.update-order-status-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const orderId = e.currentTarget.dataset.id;
+                    const selectElement = document.querySelector(`.order-status-select[data-order-id="${orderId}"]`);
+                    const newStatus = selectElement.value;
+
+                    const formData = new FormData();
+                    formData.append('status', newStatus);
+
+                    try {
+                        const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            alert(data.message);
+                            fetchOrdersAdmin();
+                        } else {
+                            alert('Помилка оновлення статусу: ' + data.error);
+                        }
+                    } catch (error) {
+                        console.error('Помилка оновлення статусу:', error);
+                        alert('Виникла помилка під час оновлення статусу замовлення.');
+                    }
+                });
+            });
+        }
+
+        const dishesListDiv = document.getElementById('dishesList');
+        const editDishModal = document.getElementById('editDishModal');
+        const editDishForm = document.getElementById('editDishForm');
+        const cancelEditDishBtn = document.getElementById('cancelEditDishBtn');
+        const editDishIdInput = document.getElementById('editDishId');
+        const editDishNameInput = document.getElementById('editDishName');
+        const editDishDescriptionInput = document.getElementById('editDishDescription');
+        const editDishPriceInput = document.getElementById('editDishPrice');
+        const editDishImageUrlInput = document.getElementById('editDishImageUrl');
+        const editDishImagePreview = document.getElementById('editDishImagePreview');
+        const editDishCategorySelect = document.getElementById('editDishCategory');
+        const editDishRestaurantSelect = document.getElementById('editDishRestaurant');
+        const editDishAvailableCheckbox = document.getElementById('editDishAvailable');
+
+
+        async function fetchDishesAdmin() {
+            try {
+                const response = await fetch('/api/admin/dishes');
+                const data = await response.json();
+                dishesListDiv.innerHTML = '';
+
+                if (data.dishes && data.dishes.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('data-table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Зображення</th>
+                                <th>Назва</th>
+                                <th>Ресторан</th>
+                                <th>Ціна</th>
+                                <th>Категорія</th>
+                                <th>Доступна</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    data.dishes.forEach(dish => {
+                        const row = document.createElement('tr');
+                        const imageUrl = dish.image_url || "{{ url_for('static', filename='placeholder_food.png') }}";
+                        row.innerHTML = `
+                            <td>${dish.id}</td>
+                            <td><img src="${imageUrl}" alt="${dish.name}" class="dish-image-preview"></td>
+                            <td>${dish.name}</td>
+                            <td>${dish.restaurant_name}</td>
+                            <td>${dish.price} грн</td>
+                            <td>${dish.category_name}</td>
+                            <td>${dish.is_available ? 'Так' : 'Ні'}</td>
+                            <td>
+                                <button class="btn-action edit-dish-admin-btn" data-dish='${JSON.stringify(dish)}'>Редагувати</button>
+                                <button class="btn-delete delete-dish-admin-btn" data-id="${dish.id}">Видалити</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    dishesListDiv.appendChild(table);
+                } else {
+                    dishesListDiv.innerHTML = '<p class="no-data-message">Страв не знайдено.</p>';
+                }
+                attachDishActionListenersAdmin();
+            } catch (error) {
+                console.error('Помилка завантаження страв (адмін):', error);
+                dishesListDiv.innerHTML = '<p class="no-data-message">Не вдалося завантажити страви.</p>';
+            }
+        }
+
+        function attachDishActionListenersAdmin() {
+            document.querySelectorAll('.edit-dish-admin-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const dish = JSON.parse(e.currentTarget.dataset.dish);
+                    console.log("Редагування страви (дані):", dish);
+                    editDishAdmin(dish);
+                });
+            });
+            document.querySelectorAll('.delete-dish-admin-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const dishId = e.currentTarget.dataset.id;
+                    if (confirm('Ви впевнені, що хочете видалити цю страву?')) {
+                        deleteDishAdmin(dishId);
+                    }
+                });
+            });
+        }
+
+        function editDishAdmin(dish) {
+            console.log("Викликано editDishAdmin з даними:", dish);
+            editDishIdInput.value = dish.id;
+            editDishNameInput.value = dish.name;
+            editDishDescriptionInput.value = dish.description || '';
+            editDishPriceInput.value = dish.price;
+            editDishImageUrlInput.value = dish.image_url || '';
+            editDishAvailableCheckbox.checked = dish.is_available;
+
+            populateCategorySelect(editDishCategorySelect, allCategories, dish.category_id);
+            populateRestaurantSelect(editDishRestaurantSelect, allRestaurants, dish.restaurant_id);
+
+            if (dish.image_url) {
+                editDishImagePreview.src = dish.image_url;
+                editDishImagePreview.style.display = 'block';
+            } else {
+                editDishImagePreview.style.display = 'none';
+                editDishImagePreview.src = '';
+            }
+            editDishModal.classList.remove('hidden');
+        }
+
+        cancelEditDishBtn.addEventListener('click', () => {
+            editDishModal.classList.add('hidden');
+        });
+
+        editDishImageUrlInput.addEventListener('input', () => {
+            if (editDishImageUrlInput.value) {
+                editDishImagePreview.src = editDishImageUrlInput.value;
+                editDishImagePreview.style.display = 'block';
+            } else {
+                editDishImagePreview.style.display = 'none';
+                editDishImagePreview.src = '';
+            }
+        });
+
+        editDishForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dishId = editDishIdInput.value;
+            const formData = new FormData(editDishForm);
+            if (editDishAvailableCheckbox.checked) {
+                formData.append('is_available', 'true');
+            } else {
+                // Якщо чекбокс не відмічений, не додаємо 'is_available' взагалі.
+            }
+
+            try {
+                const response = await fetch(`/api/admin/dishes/${dishId}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    editDishModal.classList.add('hidden');
+                    fetchDishesAdmin();
+                } else {
+                    alert('Помилка оновлення страви: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка оновлення страви:', error);
+                alert('Виникла помилка під час оновлення страви.');
+            }
+        });
+
+        async function deleteDishAdmin(dishId) {
+            try {
+                const response = await fetch(`/api/admin/dishes/${dishId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchDishesAdmin();
+                } else {
+                    alert('Помилка видалення страви: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка видалення страви:', error);
+                alert('Виникла помилка під час видалення страви.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchRoles();
+            await fetchCategories();
+            await fetchRestaurantsForDishEdit();
+
+            openTab('users');
+        });
+    </script>
+</body>
+</html>

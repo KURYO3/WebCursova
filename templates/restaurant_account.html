@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мій акаунт (Ресторан)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .account-section {
+            background-color: #fff;
+            padding: 25px;
+            margin-top: 50px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 1100px;
+        }
+        .account-section h2 {
+            color: var(--color-dark);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+        .profile-info p {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #555;
+        }
+        .profile-info strong {
+            color: var(--color-dark);
+        }
+        .btn-edit, .btn-save, .btn-cancel, .btn-add-dish, .btn-update-status {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        .btn-edit:hover, .btn-save:hover, .btn-add-dish:hover, .btn-update-status:hover {
+            background-color: var(--color-dark);
+        }
+        .btn-cancel {
+            background-color: #6c757d;
+        }
+        .btn-cancel:hover {
+            background-color: #5a6268;
+        }
+        .profile-edit-form .form-group,
+        .dish-form .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .profile-edit-form label,
+        .dish-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #444;
+        }
+        .profile-edit-form input[type="text"],
+        .profile-edit-form input[type="tel"],
+        .profile-edit-form textarea,
+        .dish-form input[type="text"],
+        .dish-form input[type="number"],
+        .dish-form textarea,
+        .dish-form select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .profile-edit-form input:focus,
+        .profile-edit-form textarea:focus,
+        .dish-form input:focus,
+        .dish-form textarea:focus,
+        .dish-form select:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 5px rgba(232, 49, 0, 0.2);
+        }
+        .profile-edit-form.hidden, .dish-edit-form.hidden, .dish-add-form.hidden {
+            display: none;
+        }
+        .menu-table, .orders-table, .reviews-table{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .menu-table th, .orders-table th, .reviews-table th{
+            background-color: var(--color-light);
+            color: var(--color-dark);
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 2px solid var(--color-primary);
+        }
+        .menu-table td, .orders-table td, .reviews-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+            vertical-align: top;
+        }
+        .menu-table tr:nth-child(even), .orders-table tr:nth-child(even), .reviews-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .menu-table tr:hover, .orders-table tr:hover, .reviews-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        .no-data-message {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+            font-style: italic;
+        }
+        .dish-actions button, .order-actions button {
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        .btn-edit-dish { background-color: var(--color-primary); color: white; }
+        .btn-edit-dish:hover { background-color: var(--color-dark); }
+        .btn-delete-dish { background-color: #6c757d; color: white; }
+        .btn-delete-dish:hover { background-color: #5a6268; }
+        .btn-status-change { background-color: #ffc107; color: #212529; }
+        .btn-status-change:hover { background-color: #e0a800; }
+
+        .dish-image-preview {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: cover;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        .order-items-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .order-items-list li {
+            margin-bottom: 3px;
+        }
+        .order-status-select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .review-rating-stars {
+            color: #ffc107;
+            font-size: 1.2em;
+        }
+        .average-rating-display {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: var(--color-primary);
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-btn toggle-btn fixed-menu-btn">☰</button>
+    <nav class="sidebar" id="sidebar">
+        <ul class="menu-list">
+            <li><a href="{{ url_for('index') }}">Головна</a></li>
+            <li><a href="#" id="logoutBtn">Вийти</a></li>
+        </ul>
+    </nav>
+    <div class="topbar" id="topbar">
+        <img src="{{ url_for('static', filename='logo2.png') }}" alt="Logo" class="logo" onclick="location.href='{{ url_for('index') }}'">
+    </div>
+    <div id="main">
+        <main class="content">
+            <h1>Мій акаунт Ресторану</h1>
+
+            <section class="account-section restaurant-profile-section">
+                <h2>Інформація про ресторан</h2>
+                <div id="restaurantDisplay">
+                    <p><strong>Назва:</strong> <span id="restaurantNameDisplay">Завантаження...</span></p>
+                    <p><strong>Опис:</strong> <span id="restaurantDescriptionDisplay">Завантаження...</span></p>
+                    <p><strong>Телефон:</strong> <span id="restaurantPhoneDisplay">Завантаження...</span></p>
+                    <p><strong>Тип кухні:</strong> <span id="restaurantCuisineTypeDisplay">Завантаження...</span></p>
+                    <button class="btn-edit" id="editRestaurantBtn">Редагувати</button>
+                </div>
+                <form id="restaurantEditForm" class="profile-edit-form hidden">
+                    <div class="form-group">
+                        <label for="editRestaurantName">Назва:</label>
+                        <input type="text" id="editRestaurantName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRestaurantDescription">Опис:</label>
+                        <textarea id="editRestaurantDescription" name="description" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRestaurantPhone">Телефон:</label>
+                        <input type="tel" id="editRestaurantPhone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRestaurantCuisineType">Тип кухні:</label>
+                        <input type="text" id="editRestaurantCuisineType" name="cuisineType">
+                    </div>
+                    <button type="submit" class="btn-save">Зберегти зміни</button>
+                    <button type="button" class="btn-cancel" id="cancelEditRestaurantBtn">Скасувати</button>
+                </form>
+            </section>
+
+            <section class="account-section menu-section">
+                <h2>Моє меню</h2>
+                <button class="btn-primary btn-add-dish" id="showAddDishFormBtn">Додати нову страву</button>
+
+                <form id="dishForm" class="dish-form hidden">
+                    <h3><span id="dishFormTitle">Додати нову страву</span></h3>
+                    <input type="hidden" id="dishId" name="dish_id">
+                    <div class="form-group">
+                        <label for="dishName">Назва страви:</label>
+                        <input type="text" id="dishName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dishDescription">Опис:</label>
+                        <textarea id="dishDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="dishPrice">Ціна (грн):</label>
+                        <input type="number" id="dishPrice" name="price" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dishImageUrl">URL зображення:</label>
+                        <input type="text" id="dishImageUrl" name="image_url">
+                        <img id="dishImagePreview" class="dish-image-preview" src="" alt="Попередній перегляд" style="display:none;">
+                    </div>
+                    <div class="form-group">
+                        <label for="dishCategory">Категорія:</label>
+                        <select id="dishCategory" name="category_id" required>
+                            </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="dishAvailable" name="is_available">
+                        <label for="dishAvailable" style="display: inline-block; margin-left: 10px;">Доступна</label>
+                    </div>
+                    <button type="submit" class="btn-save" id="saveDishBtn">Зберегти страву</button>
+                    <button type="button" class="btn-cancel" id="cancelDishFormBtn">Скасувати</button>
+                </form>
+
+                <div id="dishesList">
+                    <p class="no-data-message" id="noDishesMessage">Завантаження меню...</p>
+                </div>
+            </section>
+
+            <section class="account-section orders-section">
+                <h2>Замовлення</h2>
+                <div id="restaurantOrdersList">
+                    <p class="no-data-message" id="noRestaurantOrdersMessage">Завантаження замовлень...</p>
+                </div>
+            </section>
+
+            <section class="account-section restaurant-reviews-section">
+                <h2>Відгуки про мій ресторан</h2>
+                <p class="average-rating-display">Середній рейтинг: <span id="averageRating">N/A</span></p>
+                <div id="restaurantReviewsList">
+                    <p class="no-data-message" id="noRestaurantReviewsMessage">Завантаження відгуків...</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    <script>
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        const topbar = document.getElementById('topbar');
+        const fixedMenuBtn = document.querySelector('.fixed-menu-btn');
+
+        toggleButtons.forEach(btn => btn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            main.classList.toggle('shifted');
+            topbar.classList.toggle('shifted');
+            fixedMenuBtn.classList.toggle('shifted');
+        }));
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch("/api/logout")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.href = "{{ url_for('index') }}";
+                        } else {
+                            alert("Помилка при виході: " + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Помилка:', error);
+                        alert('Виникла помилка під час виходу.');
+                    });
+            });
+        }
+
+        const restaurantDisplay = document.getElementById('restaurantDisplay');
+        const restaurantEditForm = document.getElementById('restaurantEditForm');
+        const editRestaurantBtn = document.getElementById('editRestaurantBtn');
+        const cancelEditRestaurantBtn = document.getElementById('cancelEditRestaurantBtn');
+        const restaurantNameDisplay = document.getElementById('restaurantNameDisplay');
+        const restaurantDescriptionDisplay = document.getElementById('restaurantDescriptionDisplay');
+        const restaurantPhoneDisplay = document.getElementById('restaurantPhoneDisplay');
+        const restaurantCuisineTypeDisplay = document.getElementById('restaurantCuisineTypeDisplay');
+        const editRestaurantNameInput = document.getElementById('editRestaurantName');
+        const editRestaurantDescriptionInput = document.getElementById('editRestaurantDescription');
+        const editRestaurantPhoneInput = document.getElementById('editRestaurantPhone');
+        const editRestaurantCuisineTypeInput = document.getElementById('editRestaurantCuisineType');
+
+        async function fetchRestaurantProfile() {
+            try {
+                const response = await fetch('/api/restaurant/profile');
+                const data = await response.json();
+                if (data.restaurant) {
+                    restaurantNameDisplay.textContent = data.restaurant.name;
+                    restaurantDescriptionDisplay.textContent = data.restaurant.description || 'Немає опису';
+                    restaurantPhoneDisplay.textContent = data.restaurant.phone;
+                    restaurantCuisineTypeDisplay.textContent = data.restaurant.cuisine_type || 'Не вказано';
+
+                    editRestaurantNameInput.value = data.restaurant.name;
+                    editRestaurantDescriptionInput.value = data.restaurant.description || '';
+                    editRestaurantPhoneInput.value = data.restaurant.phone;
+                    editRestaurantCuisineTypeInput.value = data.restaurant.cuisine_type || '';
+                } else {
+                    alert('Помилка завантаження профілю ресторану: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка завантаження профілю ресторану:', error);
+                alert('Виникла помилка під час завантаження профілю ресторану.');
+            }
+        }
+
+        editRestaurantBtn.addEventListener('click', () => {
+            restaurantDisplay.classList.add('hidden');
+            restaurantEditForm.classList.remove('hidden');
+        });
+
+        cancelEditRestaurantBtn.addEventListener('click', () => {
+            restaurantEditForm.classList.add('hidden');
+            restaurantDisplay.classList.remove('hidden');
+            editRestaurantNameInput.value = restaurantNameDisplay.textContent;
+            editRestaurantDescriptionInput.value = restaurantDescriptionDisplay.textContent === 'Немає опису' ? '' : restaurantDescriptionDisplay.textContent;
+            editRestaurantPhoneInput.value = restaurantPhoneDisplay.textContent;
+            editRestaurantCuisineTypeInput.value = restaurantCuisineTypeDisplay.textContent === 'Не вказано' ? '' : restaurantCuisineTypeDisplay.textContent;
+        });
+
+        restaurantEditForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(restaurantEditForm);
+            try {
+                const response = await fetch('/api/restaurant/profile', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchRestaurantProfile();
+                    restaurantEditForm.classList.add('hidden');
+                    restaurantDisplay.classList.remove('hidden');
+                } else {
+                    alert('Помилка оновлення профілю ресторану: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка оновлення профілю ресторану:', error);
+                alert('Виникла помилка під час оновлення профілю ресторану.');
+            }
+        });
+
+        const dishesList = document.getElementById('dishesList');
+        const showAddDishFormBtn = document.getElementById('showAddDishFormBtn');
+        const dishForm = document.getElementById('dishForm');
+        const dishFormTitle = document.getElementById('dishFormTitle');
+        const cancelDishFormBtn = document.getElementById('cancelDishFormBtn');
+        const saveDishBtn = document.getElementById('saveDishBtn');
+        const dishIdInput = document.getElementById('dishId');
+        const dishNameInput = document.getElementById('dishName');
+        const dishDescriptionInput = document.getElementById('dishDescription');
+        const dishPriceInput = document.getElementById('dishPrice');
+        const dishImageUrlInput = document.getElementById('dishImageUrl');
+        const dishImagePreview = document.getElementById('dishImagePreview');
+        const dishCategorySelect = document.getElementById('dishCategory');
+        const dishAvailableCheckbox = document.getElementById('dishAvailable');
+        const noDishesMessage = document.getElementById('noDishesMessage');
+
+        let allCategories = [];
+
+        async function fetchCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                const data = await response.json();
+                if (data.categories) {
+                    allCategories = data.categories;
+                    populateCategorySelect(allCategories);
+                }
+            } catch (error) {
+                console.error('Помилка завантаження категорій:', error);
+            }
+        }
+
+        function populateCategorySelect(categories, selectedId = null) {
+            dishCategorySelect.innerHTML = '<option value="">Оберіть категорію</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                if (selectedId && category.id === selectedId) {
+                    option.selected = true;
+                }
+                dishCategorySelect.appendChild(option);
+            });
+        }
+
+        async function fetchRestaurantMenu() {
+            try {
+                const response = await fetch('/api/restaurant/dishes');
+                const data = await response.json();
+                dishesList.innerHTML = '';
+
+                if (data.dishes && data.dishes.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('menu-table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Зображення</th>
+                                <th>Назва</th>
+                                <th>Опис</th>
+                                <th>Ціна</th>
+                                <th>Категорія</th>
+                                <th>Доступна</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    data.dishes.forEach(dish => {
+                        const row = document.createElement('tr');
+                        const imageUrl = dish.image_url || "{{ url_for('static', filename='placeholder_food.png') }}";
+                        row.innerHTML = `
+                            <td><img src="${imageUrl}" alt="${dish.name}" class="dish-image-preview"></td>
+                            <td>${dish.name}</td>
+                            <td>${dish.description || '-'}</td>
+                            <td>${dish.price} грн</td>
+                            <td>${dish.category_name || '-'}</td>
+                            <td>${dish.is_available ? 'Так' : 'Ні'}</td>
+                            <td class="dish-actions">
+                                <button class="btn-edit-dish" data-dish='${JSON.stringify(dish)}'>Редагувати</button>
+                                <button class="btn-delete-dish" data-id="${dish.id}">Видалити</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    dishesList.appendChild(table);
+                    noDishesMessage.style.display = 'none';
+                } else {
+                    dishesList.innerHTML = '<p class="no-data-message">Ваше меню поки порожнє. Додайте першу страву!</p>';
+                }
+                attachDishActionListeners();
+            } catch (error) {
+                console.error('Помилка завантаження меню ресторану:', error);
+                dishesList.innerHTML = '<p class="no-data-message">Не вдалося завантажити меню.</p>';
+            }
+        }
+
+        function attachDishActionListeners() {
+            document.querySelectorAll('.btn-edit-dish').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const dish = JSON.parse(e.currentTarget.dataset.dish);
+                    editDish(dish);
+                });
+            });
+            document.querySelectorAll('.btn-delete-dish').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const dishId = e.currentTarget.dataset.id;
+                    if (confirm('Ви впевнені, що хочете видалити цю страву?')) {
+                        deleteDish(dishId);
+                    }
+                });
+            });
+        }
+
+        showAddDishFormBtn.addEventListener('click', () => {
+            dishFormTitle.textContent = 'Додати нову страву';
+            dishIdInput.value = '';
+            dishForm.reset();
+            dishImagePreview.style.display = 'none';
+            dishImagePreview.src = '';
+            populateCategorySelect(allCategories);
+            dishForm.classList.remove('hidden');
+            saveDishBtn.textContent = 'Додати страву';
+        });
+
+        cancelDishFormBtn.addEventListener('click', () => {
+            dishForm.classList.add('hidden');
+        });
+
+        dishImageUrlInput.addEventListener('input', () => {
+            if (dishImageUrlInput.value) {
+                dishImagePreview.src = dishImageUrlInput.value;
+                dishImagePreview.style.display = 'block';
+            } else {
+                dishImagePreview.style.display = 'none';
+                dishImagePreview.src = '';
+            }
+        });
+
+        function editDish(dish) {
+            dishFormTitle.textContent = 'Редагувати страву';
+            dishIdInput.value = dish.id;
+            dishNameInput.value = dish.name;
+            dishDescriptionInput.value = dish.description || '';
+            dishPriceInput.value = dish.price;
+            dishImageUrlInput.value = dish.image_url || '';
+            dishAvailableCheckbox.checked = dish.is_available;
+            populateCategorySelect(allCategories, dish.category_name ? allCategories.find(c => c.name === dish.category_name).id : null);
+
+            if (dish.image_url) {
+                dishImagePreview.src = dish.image_url;
+                dishImagePreview.style.display = 'block';
+            } else {
+                dishImagePreview.style.display = 'none';
+                dishImagePreview.src = '';
+            }
+
+            dishForm.classList.remove('hidden');
+            saveDishBtn.textContent = 'Зберегти зміни';
+        }
+
+        dishForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(dishForm);
+
+            // Якщо чекбокс відмічений, додаємо його. Якщо ні, не додаємо взагалі.
+            if (dishAvailableCheckbox.checked) {
+                formData.append('is_available', 'on');
+            } else {
+                // Якщо чекбокс не відмічений, ми просто не додаємо 'is_available' до formData.
+                // Це призведе до того, що на сервері 'is_available' in request.form буде false.
+            }
+
+            const dishId = dishIdInput.value;
+            let url = '/api/restaurant/dishes';
+            let method = 'POST';
+
+            if (dishId) {
+                url = `/api/restaurant/dishes/${dishId}`;
+                method = 'PUT';
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    dishForm.classList.add('hidden');
+                    fetchRestaurantMenu();
+                } else {
+                    alert('Помилка: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка відправки форми страви:', error);
+                alert('Виникла помилка під час збереження страви.');
+            }
+        });
+
+        async function deleteDish(dishId) {
+            try {
+                const response = await fetch(`/api/restaurant/dishes/${dishId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchRestaurantMenu();
+                } else {
+                    alert('Помилка видалення страви: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Помилка видалення страви:', error);
+                alert('Виникла помилка під час видалення страви.');
+            }
+        }
+
+        const restaurantOrdersList = document.getElementById('restaurantOrdersList');
+        const noRestaurantOrdersMessage = document.getElementById('noRestaurantOrdersMessage');
+
+        async function fetchRestaurantOrders() {
+            try {
+                const response = await fetch('/api/restaurant/orders');
+                const data = await response.json();
+                restaurantOrdersList.innerHTML = '';
+
+                if (data.orders && data.orders.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('orders-table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>ID Замовлення</th>
+                                <th>Дата</th>
+                                <th>Клієнт</th>
+                                <th>Адреса доставки</th>
+                                <th>Статус</th>
+                                <th>Сума</th>
+                                <th>Позиції</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    data.orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        const itemsList = order.items.map(item => `
+                            <li>${item.dish_name} (x${item.quantity}) - ${item.unit_price} грн</li>
+                        `).join('');
+
+                        row.innerHTML = `
+                            <td>${order.order_id}</td>
+                            <td>${order.created_at}</td>
+                            <td>${order.user_name} (${order.user_email})</td>
+                            <td>${order.delivery_address}</td>
+                            <td>
+                                <select class="order-status-select" data-order-id="${order.order_id}">
+                                    <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Очікує</option>
+                                    <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>Готується</option>
+                                    <option value="ready" ${order.status === 'ready' ? 'selected' : ''}>Готове</option>
+                                    <option value="in_transit" ${order.status === 'in_transit' ? 'selected' : ''}>В дорозі</option>
+                                    <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Доставлено</option>
+                                </select>
+                            </td>
+                            <td>${order.total_price} грн</td>
+                            <td><ul class="order-items-list">${itemsList}</ul></td>
+                            <td><button class="btn-primary btn-update-status" data-order-id="${order.order_id}">Оновити статус</button></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    restaurantOrdersList.appendChild(table);
+                    noRestaurantOrdersMessage.style.display = 'none';
+                } else {
+                    restaurantOrdersList.innerHTML = '<p class="no-data-message">Наразі немає замовлень для вашого ресторану.</p>';
+                }
+                attachOrderStatusListeners();
+            } catch (error) {
+                console.error('Помилка завантаження замовлень ресторану:', error);
+                restaurantOrdersList.innerHTML = '<p class="no-data-message">Не вдалося завантажити замовлення.</p>';
+            }
+        }
+
+        function attachOrderStatusListeners() {
+            document.querySelectorAll('.btn-update-status').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const orderId = e.currentTarget.dataset.orderId;
+                    const selectElement = document.querySelector(`.order-status-select[data-order-id="${orderId}"]`);
+                    const newStatus = selectElement.value;
+
+                    const formData = new FormData();
+                    formData.append('status', newStatus);
+
+                    try {
+                        const response = await fetch(`/api/restaurant/orders/${orderId}/status`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            alert(data.message);
+                            fetchRestaurantOrders();
+                        } else {
+                            alert('Помилка оновлення статусу: ' + data.error);
+                        }
+                    } catch (error) {
+                        console.error('Помилка оновлення статусу:', error);
+                        alert('Виникла помилка під час оновлення статусу замовлення.');
+                    }
+                });
+            });
+        }
+
+        const restaurantReviewsList = document.getElementById('restaurantReviewsList');
+        const averageRatingDisplay = document.getElementById('averageRating');
+        const noRestaurantReviewsMessage = document.getElementById('noRestaurantReviewsMessage');
+
+        async function fetchRestaurantReviews() {
+            try {
+                const response = await fetch('/api/restaurant/reviews');
+                const data = await response.json();
+                restaurantReviewsList.innerHTML = '';
+
+                if (data.reviews && data.reviews.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('reviews-table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Рейтинг</th>
+                                <th>Коментар</th>
+                                <th>Клієнт</th>
+                                <th>№ Замовлення </th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    data.reviews.forEach(review => {
+                        const row = document.createElement('tr');
+                        let stars = '';
+                        for (let i = 0; i < review.rating; i++) {
+                            stars += '★';
+                        }
+                        for (let i = review.rating; i < 5; i++) {
+                            stars += '☆';
+                        }
+
+                        row.innerHTML = `
+                            <td><span class="review-rating-stars">${stars}</span></td>
+                            <td>${review.comment || 'Немає коментаря.'}</td>
+                            <td>${review.user_name}</td>
+                            <td>${review.order_id}</td>
+                            <td>${review.created_at}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    restaurantReviewsList.appendChild(table);
+                    noRestaurantReviewsMessage.style.display = 'none';
+                } else {
+                    restaurantReviewsList.innerHTML = '<p class="no-data-message">Наразі немає відгуків про ваш ресторан.</p>';
+                }
+
+                if (data.average_rating !== undefined) {
+                    averageRatingDisplay.textContent = data.average_rating.toFixed(1);
+                } else {
+                    averageRatingDisplay.textContent = 'N/A';
+                }
+
+            } catch (error) {
+                console.error('Помилка завантаження відгуків ресторану:', error);
+                restaurantReviewsList.innerHTML = '<p class="no-data-message">Не вдалося завантажити відгуки.</p>';
+                averageRatingDisplay.textContent = 'N/A';
+            }
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchRestaurantProfile();
+            fetchCategories();
+            fetchRestaurantMenu();
+            fetchRestaurantOrders();
+            fetchRestaurantReviews();
+        });
+    </script>
+</body>
+</html>

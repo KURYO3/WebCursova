@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Реєстрація ресторану</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles-auth.css') }}">
+</head>
+<body>
+  <div id="main">
+    <main class="content auth-form-container">
+      <form class="auth-form" action="/api/register_restaurant" method="POST">
+        <div class="logo-container">
+          <img src="{{ url_for('static', filename='rehcfx.png') }}" alt="Logo" class="auth-logo" onclick="location.href='{{ url_for('main_page') }}'">
+        </div>
+        <h2>Реєстрація ресторану</h2>
+
+        <div class="form-group">
+          <label for="email">Email (для входу)</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Пароль</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">Підтвердження пароля</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" required>
+        </div>
+
+        <div class="form-group">
+          <label for="restaurantName">Назва ресторану</label>
+          <input type="text" id="restaurantName" name="restaurantName" required>
+        </div>
+        <div class="form-group">
+          <label for="phone">Телефон ресторану</label>
+          <input type="tel" id="phone" name="phone" required>
+        </div>
+
+        <div class="form-group">
+          <label for="street">Вулиця та номер будинку</label>
+          <input type="text" id="street" name="street" required>
+        </div>
+        <div class="form-group">
+          <label for="city">Місто</label>
+          <input type="text" id="city" name="city" required>
+        </div>
+        <div class="form-group">
+          <label for="postalCode">Поштовий індекс (необов'язково)</label>
+          <input type="text" id="postalCode" name="postalCode">
+        </div>
+        <div class="form-group">
+          <label for="description">Опис ресторану</label>
+          <textarea id="description" name="description" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="cuisineType">Тип кухні</label> {# Переконайтеся, що name="cuisineType" #}
+          <input type="text" id="cuisineType" name="cuisineType">
+        </div>
+
+        <button type="submit" class="btn-primary">Зареєструвати ресторан</button>
+        <p class="auth-link">Вже маєте аккаунт ресторану? <a href="{{ url_for('login_page') }}">Увійти як ресторан</a></p>
+        <p class="auth-link">Ви користувач? <a href="{{ url_for('register_page') }}">Зареєструватися як користувач</a></p>
+      </form>
+    </main>
+  </div>
+  <script>
+    document.querySelector('.auth-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+
+      const password = formData.get('password');
+      const confirmPassword = formData.get('confirmPassword');
+      if (password !== confirmPassword) {
+        alert('Паролі не співпадають!');
+        return;
+      }
+
+      fetch(form.action, {
+        method: form.method,
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+          window.location.href = "{{ url_for('login_page') }}";
+        } else {
+          alert("Помилка: " + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Помилка:', error);
+        alert('Виникла помилка під час реєстрації ресторану.');
+      });
+    });
+  </script>
+</body>
+</html>
